@@ -677,27 +677,14 @@ function startQrCode() {
 
 function showQrCode(csrfToken) {
   $.ajax({
-    url: '/login?operation=generate-qrcode',
-    type: "POST",
-    dataType: 'json', 
-    data: JSON.stringify({}),
-    contentType: 'application/json; charset=utf-8',
-    headers: {
-      "X-CSRF-TOKEN": csrfToken
+    url: '/login/generate-qrcode',
+    method: "POST",
+    headers: { "Authorization": "Bearer " + csrfToken },
+    success: (res) => {
+      console.log("QR Code recebido:", res.verificationUriComplete);
+      startPollVerifyQrCode(res.token);
     },
-    success: function(result) {
-      loginQrCode.verificationUriComplete = result.verificationUriComplete;
-	  loginQrCode.qrcode.makeCode(result.verificationUriComplete);
-
-      loginQrCode.token = result.token;
-      showModal('modal-qrcode');
-      loginQrCode.interval = result.interval || 5
-      loginQrCode.cancel = false;
-      startPollVerifyQrCode(csrfToken);
-    },
-    error: function(xhr, resp, text) {
-      stopQrCode();
-    }
+    fail: () => alert("Falha ao gerar QR Code. Tente novamente."),
   });
 }
 
