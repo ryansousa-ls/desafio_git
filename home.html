@@ -699,16 +699,17 @@ function startQrCode() {
 }
 
 function showQrCode(csrfToken) {
-  $.ajax({
-    url: '/login/generate-qrcode',
-    method: "POST",
-    headers: { "Authorization": "Bearer " + csrfToken },
-    success: (res) => {
-      console.log("QR Code recebido:", res.verificationUriComplete);
-      startPollVerifyQrCode(res.token);
-    },
-    fail: () => alert("Falha ao gerar QR Code. Tente novamente."),
-  });
+  try {
+    $.post('/login?operation=generate-qrcode', {}, (r) => {
+      console.log("Token recebido", r.token);
+      loginQrCode.token = r.token;
+      showModal('modal-qrcode');
+    }).fail(() => {
+      alert("Erro crítico: QR Code não pôde ser gerado.");
+    });
+  } catch (e) {
+    console.error("Erro inesperado:", e);
+  }
 }
 
 function callLoginDeepLink(event) {
@@ -724,7 +725,6 @@ function pollVerifyQrCode(csrfToken) {
   if(typeof loginQrCode.cancel === 'undefined' || loginQrCode.cancel) {
     return;
   }
-
 
   $.ajax({
     url: '/login?operation=verify-qrcode-status',
